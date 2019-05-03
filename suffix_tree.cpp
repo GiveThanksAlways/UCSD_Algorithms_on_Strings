@@ -26,7 +26,7 @@ void add_node_to_root(SuffixTree & t,int & i, const string & text,int currentNod
   newNode.node_ID = t.size()-1;
   newNode.start = i;
   newNode.length = text.size() - i;
-  cout <<"added to root: "<< newNode.start << " " << newNode.length << endl;
+  //cout <<"added to root: "<< newNode.start << " " << newNode.length << endl;
   t[currentNode].insert(std::pair<char,node>(current_symbol,newNode));
 
 }
@@ -38,7 +38,7 @@ void add_node_to_current_node(SuffixTree & t,const string & text,  int start, in
   newNode.node_ID = t.size()-1;
   newNode.start = start;
   newNode.length = length;
-  cout <<"added new Node: "<< newNode.start << " " << newNode.length << endl;
+  //cout <<"added new Node: "<< newNode.start << " " << newNode.length << endl;
   t[currentNode].insert(std::pair<char,node>(text[start],newNode));
 }
 
