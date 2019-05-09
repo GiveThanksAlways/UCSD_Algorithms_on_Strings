@@ -31,7 +31,7 @@ void add_node_to_root(SuffixTree & t,int & i, const string & text,int currentNod
 
 }
 
-void add_node_to_current_node(SuffixTree & t,const string & text,  int start, int length, int currentNode){
+int add_node_to_current_node(SuffixTree & t,const string & text,  int start, int length, int currentNode){
   treeEdges newEdge;
   t.push_back(newEdge);
   node newNode;
@@ -40,6 +40,19 @@ void add_node_to_current_node(SuffixTree & t,const string & text,  int start, in
   newNode.length = length;
   //cout <<"added new Node: "<< newNode.start << " " << newNode.length << endl;
   t[currentNode].insert(std::pair<char,node>(text[start],newNode));
+  return newNode.node_ID;
+}
+
+int add_node_to_new_parent_node(SuffixTree & t,const string & text,  int start, int length, int currentNode, int detached_ID){
+  treeEdges newEdge;
+  t.push_back(newEdge);
+  node newNode;
+  newNode.node_ID = detached_ID;
+  newNode.start = start;
+  newNode.length = length;
+  //cout <<"added new Node: "<< newNode.start << " " << newNode.length << endl;
+  t[currentNode].insert(std::pair<char,node>(text[start],newNode));
+  return newNode.node_ID;
 }
 
 int substring_match_length(SuffixTree & t,int i, const string & text,int currentNode,char current_symbol){
@@ -75,18 +88,33 @@ void match(SuffixTree & t,int & i, const string & text,int currentNode,char curr
       if the full substring matches, then current node becomes child node for   next loop   */
   int k = substring_match_length(t, i, text, currentNode, current_symbol);
   if(k != -1){
-    // split according to matching substring. Original node only keeps matching substring
-    // make new node to the left and old node to the right for the other guy that got cut in two
-    int substring_length = t[currentNode].find(current_symbol)->second.length;
-    int substring_start  = t[currentNode].find(current_symbol)->second.start;
-    add_node_to_current_node(t, text, substring_start+k, substring_length - k, nextNode);// 2 , 12
-    // now update the old node with only the matching substring of lenght k
-    t[currentNode].find(current_symbol)->second.length = k;
-    
-    add_node_to_current_node(t, text, i+k, text.size() - i - k, nextNode); // 4 , 10
-    // suffix is now added so update i so that we can start the next suffix 
-    i = text.size();
+    if(t[currentNode].find(current_symbol)->first == t[nextNode].find(current_symbol)->first){// if they are matching, then we switch back one node
+      // detach from previous node, add new node and then have the new node point back to the detached guy
+      int substring_length = t[currentNode].find(current_symbol)->second.length;
+      int substring_start  = t[currentNode].find(current_symbol)->second.start;
+      int detached_start =  substring_start;
+      int detached_length = substring_length;
+      int detached_ID = t[currentNode].find(current_symbol)->second.node_ID; //t[currentNode].find(text[detached_start])->second.node_ID;
+      t[currentNode].erase(current_symbol);// erase from map
+      int newGuy_ID = add_node_to_current_node(t, text, detached_start, k, currentNode);// 0,1
+      add_node_to_new_parent_node(t,text, substring_start+k, substring_length - k, newGuy_ID, detached_ID);// 1,1
+      add_node_to_new_parent_node(t,text, i+k, text.size() - i - k, newGuy_ID, detached_ID); // 3, 1
 
+      i = text.size();
+    }else{
+
+      // split according to matching substring. Original node only keeps matching substring
+      // make new node to the left and old node to the right for the other guy that got cut in two
+      int substring_length = t[currentNode].find(current_symbol)->second.length;
+      int substring_start  = t[currentNode].find(current_symbol)->second.start;
+      add_node_to_current_node(t, text, substring_start+k, substring_length - k, nextNode);// 1, 1 
+      // now update the old node with only the matching substring of length k
+      t[currentNode].find(current_symbol)->second.length = k;// 0 , 1
+
+      add_node_to_current_node(t, text, i+k, text.size() - i - k, nextNode); // guessing 3,1
+      // suffix is now added so update i so that we can start the next suffix 
+      i = text.size();
+    }
   }else{// the full substring matched, so we update to the next node and keep going down the suffix 
     //currentNode = t[currentNode].find(current_symbol)->second.node_ID;
     i += t[currentNode].find(current_symbol)->second.length -1;// walk i a distance k and subtract 1 because the for loop will advance it
